@@ -1,0 +1,43 @@
+---
+title: "Anansiskills"
+author: "Eidan"
+date: "January 29, 2019"
+output: html_document
+---
+
+```{r, message=FALSE, warning=FALSE}
+library(readr)
+library(wordVectors)
+library(tidyr)
+library(RTextTools)
+skill_list <- read_csv("skill_list.csv")
+```
+
+Prepare 
+
+```{r}
+if(!file.exists("./skillcorpus/skillcorpus.txt")){
+  write.table(skill_list[,2:12], file = "skillcorpus.txt", row.names = FALSE, col.names = FALSE)
+}
+if(!file.exists("prepped.txt")){
+  prep_word2vec(origin = "skillcorpus", destination = "prepped.txt",
+                lowercase = TRUE, bundle_ngrams = 3)
+}
+if(!file.exists("vecmodel.txt")){
+  train_word2vec("prepped.txt", "vecmodel.bin", vectors = 250, threads = 2, window = 5, iter = 5)
+}
+model <- read.vectors("vecmodel.bin")
+```
+
+```{r}
+term_set <- (model %>% closest_to(model[["swimming"]], 30))$word
+
+subset <- model[[term_set,average=F]]
+
+subset %>%
+  cosineDist(subset) %>%
+  as.dist() %>%
+  hclust() %>%
+  plot()
+```
+
